@@ -41,9 +41,16 @@ class CrudMethods {
     return await db.insert("medications", med.toMap());
   }
 
-  Future<List<Medication>> getMedications() async {
+  // ✅ Versión con JOIN para obtener nombre de la forma
+  Future<List<Medication>> getMedicationsWithFormName() async {
     final db = await _dbHelper.db;
-    final result = await db.query("medications");
+    final result = await db.rawQuery('''
+      SELECT m.id, m.name, m.dose, m.form_id, m.photo_path, m.is_active, 
+             f.name as form_name
+      FROM medications m
+      LEFT JOIN forms f ON m.form_id = f.id
+      WHERE m.is_active = 1
+    ''');
     return result.map((e) => Medication.fromMap(e)).toList();
   }
 
@@ -63,48 +70,43 @@ class CrudMethods {
   }
 
   // ---------------- TREATMENTS ----------------
-  // Insertar tratamiento
-Future<int> insertTreatment(Treatment t) async {
-  final db = await _dbHelper.db;
-  return await db.insert("treatments", t.toMap());
-}
+  Future<int> insertTreatment(Treatment t) async {
+    final db = await _dbHelper.db;
+    return await db.insert("treatments", t.toMap());
+  }
 
-// Obtener todos los tratamientos
-Future<List<Treatment>> getTreatments() async {
-  final db = await _dbHelper.db;
-  final result = await db.query("treatments");
-  return result.map((e) => Treatment.fromMap(e)).toList();
-}
+  Future<List<Treatment>> getTreatments() async {
+    final db = await _dbHelper.db;
+    final result = await db.query("treatments");
+    return result.map((e) => Treatment.fromMap(e)).toList();
+  }
 
-// Obtener solo los tratamientos activos
-Future<List<Treatment>> getActiveTreatments() async {
-  final db = await _dbHelper.db;
-  final result = await db.query("treatments", where: "status = ?", whereArgs: ["ACTIVE"]);
-  return result.map((e) => Treatment.fromMap(e)).toList();
-}
+  Future<List<Treatment>> getActiveTreatments() async {
+    final db = await _dbHelper.db;
+    final result = await db.query("treatments",
+        where: "status = ?", whereArgs: ["ACTIVE"]);
+    return result.map((e) => Treatment.fromMap(e)).toList();
+  }
 
-// Actualizar tratamiento (incluye status)
-Future<int> updateTreatment(Treatment t) async {
-  final db = await _dbHelper.db;
-  return await db.update(
-    "treatments",
-    t.toMap(),
-    where: "id = ?",
-    whereArgs: [t.id],
-  );
-}
+  Future<int> updateTreatment(Treatment t) async {
+    final db = await _dbHelper.db;
+    return await db.update(
+      "treatments",
+      t.toMap(),
+      where: "id = ?",
+      whereArgs: [t.id],
+    );
+  }
 
-// Cambiar estado de un tratamiento a ABANDONED
-Future<int> abandonTreatment(int id) async {
-  final db = await _dbHelper.db;
-  return await db.update(
-    "treatments",
-    {"status": "ABANDONED"},
-    where: "id = ?",
-    whereArgs: [id],
-  );
-}
-
+  Future<int> abandonTreatment(int id) async {
+    final db = await _dbHelper.db;
+    return await db.update(
+      "treatments",
+      {"status": "ABANDONED"},
+      where: "id = ?",
+      whereArgs: [id],
+    );
+  }
 
   // ---------------- SCHEDULE ----------------
   Future<int> insertSchedule(Schedule s) async {
@@ -114,7 +116,8 @@ Future<int> abandonTreatment(int id) async {
 
   Future<List<Schedule>> getSchedulesByTreatment(int treatmentId) async {
     final db = await _dbHelper.db;
-    final result = await db.query("schedule", where: "treatment_id = ?", whereArgs: [treatmentId]);
+    final result = await db.query("schedule",
+        where: "treatment_id = ?", whereArgs: [treatmentId]);
     return result.map((e) => Schedule.fromMap(e)).toList();
   }
 
@@ -141,7 +144,8 @@ Future<int> abandonTreatment(int id) async {
 
   Future<List<DoseLog>> getDoseLogsBySchedule(int scheduleId) async {
     final db = await _dbHelper.db;
-    final result = await db.query("dose_log", where: "schedule_id = ?", whereArgs: [scheduleId]);
+    final result = await db
+        .query("dose_log", where: "schedule_id = ?", whereArgs: [scheduleId]);
     return result.map((e) => DoseLog.fromMap(e)).toList();
   }
 

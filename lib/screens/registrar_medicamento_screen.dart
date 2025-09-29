@@ -7,14 +7,15 @@ class RegistrarMedicamentoScreen extends StatefulWidget {
   const RegistrarMedicamentoScreen({super.key});
 
   @override
-  State<RegistrarMedicamentoScreen> createState() => _RegistrarMedicamentoScreenState();
+  State<RegistrarMedicamentoScreen> createState() =>
+      _RegistrarMedicamentoScreenState();
 }
 
-class _RegistrarMedicamentoScreenState extends State<RegistrarMedicamentoScreen> {
+class _RegistrarMedicamentoScreenState
+    extends State<RegistrarMedicamentoScreen> {
   final CrudMethods crud = CrudMethods();
 
-  String? selectedForm; // nombre de la forma seleccionada
-  int? selectedFormId; // id de la forma en BD
+  int? selectedFormId; // ✅ guardamos solo el id de la forma
 
   final TextEditingController _formController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -43,15 +44,16 @@ class _RegistrarMedicamentoScreenState extends State<RegistrarMedicamentoScreen>
     final id = await crud.insertForm(newForm);
     setState(() {
       forms.add(FormModel(id: id, name: _formController.text));
-      selectedForm = _formController.text;
-      selectedFormId = id;
+      selectedFormId = id; // ✅ guardamos id
     });
     _formController.clear();
   }
 
   // 🔹 Insertar un medicamento en BD
   Future<void> _saveMedication() async {
-    if (_nameController.text.isEmpty || _doseController.text.isEmpty || selectedFormId == null) {
+    if (_nameController.text.isEmpty ||
+        _doseController.text.isEmpty ||
+        selectedFormId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Completa todos los campos")),
       );
@@ -61,7 +63,7 @@ class _RegistrarMedicamentoScreenState extends State<RegistrarMedicamentoScreen>
     final med = Medication(
       name: _nameController.text,
       dose: _doseController.text,
-      formId: selectedFormId!,
+      formId: selectedFormId!, // ✅ usamos id de forma
     );
     await crud.insertMedication(med);
 
@@ -81,21 +83,18 @@ class _RegistrarMedicamentoScreenState extends State<RegistrarMedicamentoScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Forma:", style: TextStyle(fontSize: 16)),
-                DropdownButton<String>(
-                  value: selectedForm,
+                DropdownButton<int?>(
+                  value: selectedFormId,
                   hint: const Text("Seleccionar forma"),
                   items: forms.map((form) {
-                    return DropdownMenuItem(
-                      value: form.name,
+                    return DropdownMenuItem<int>(
+                      value: form.id,
                       child: Text(form.name),
-                      onTap: () {
-                        selectedFormId = form.id;
-                      },
                     );
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
-                      selectedForm = value;
+                      selectedFormId = value;
                     });
                   },
                 ),
@@ -107,11 +106,13 @@ class _RegistrarMedicamentoScreenState extends State<RegistrarMedicamentoScreen>
                         title: const Text("Agregar nueva forma"),
                         content: TextField(
                           controller: _formController,
-                          decoration: const InputDecoration(hintText: "Nombre de la forma"),
+                          decoration: const InputDecoration(
+                              hintText: "Nombre de la forma"),
                         ),
                         actions: [
                           IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
+                            icon:
+                                const Icon(Icons.check, color: Colors.green),
                             onPressed: () async {
                               await _addForm();
                               Navigator.pop(context);
@@ -174,12 +175,14 @@ class _RegistrarMedicamentoScreenState extends State<RegistrarMedicamentoScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.check, color: Colors.green, size: 32),
+                  icon: const Icon(Icons.check,
+                      color: Colors.green, size: 32),
                   onPressed: _saveMedication,
                 ),
                 const SizedBox(width: 40),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.red, size: 32),
+                  icon: const Icon(Icons.close,
+                      color: Colors.red, size: 32),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],

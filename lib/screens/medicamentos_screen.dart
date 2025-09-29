@@ -1,5 +1,5 @@
-import 'dart:io'; // para mostrar imágenes guardadas en File
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../db/crud_methods.dart';
 import '../models/medication.dart';
 import 'registrar_medicamento_screen.dart';
@@ -15,29 +15,17 @@ class MedicamentosScreen extends StatefulWidget {
 class _MedicamentosScreenState extends State<MedicamentosScreen> {
   final CrudMethods crud = CrudMethods();
   List<Medication> medicamentos = [];
-  List<Medication> medicamentosFiltrados = [];
 
   @override
   void initState() {
     super.initState();
-    _loadMedicamentos();
+    _loadMedications();
   }
 
-  // 🔹 Cargar medicamentos desde la BD
-  Future<void> _loadMedicamentos() async {
-    final list = await crud.getMedications();
+  Future<void> _loadMedications() async {
+    final list = await crud.getMedicationsWithFormName();
     setState(() {
       medicamentos = list;
-      medicamentosFiltrados = list;
-    });
-  }
-
-  // 🔹 Filtrar por nombre
-  void _filtrarMedicamentos(String query) {
-    setState(() {
-      medicamentosFiltrados = medicamentos
-          .where((m) => m.name.toLowerCase().contains(query.toLowerCase()))
-          .toList();
     });
   }
 
@@ -64,7 +52,8 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
-              child: Text("Menú", style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Text("Menú",
+                  style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
               leading: const Icon(Icons.home),
@@ -101,13 +90,13 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                 const Text("Buscar: ", style: TextStyle(fontSize: 16)),
                 Expanded(
                   child: TextField(
-                    onChanged: _filtrarMedicamentos,
                     decoration: InputDecoration(
                       hintText: "Nombre del medicamento",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 8),
                     ),
                   ),
                 ),
@@ -115,7 +104,7 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Tabla dinámica de medicamentos
+            // Tabla de medicamentos
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.vertical,
@@ -123,53 +112,61 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                   columns: const [
                     DataColumn(label: Text("Nombre")),
                     DataColumn(label: Text("Dosis")),
-                    DataColumn(label: Text("Forma ID")), // por ahora solo ID
+                    DataColumn(label: Text("Forma")),
                     DataColumn(label: Text("Imagen")),
-                    DataColumn(label: Text("")), // columna vacía para botón editar
+                    DataColumn(label: Text("")), // para botón editar
                   ],
-                  rows: medicamentosFiltrados.map((med) {
+                  rows: medicamentos.map((med) {
                     return DataRow(
                       cells: [
                         DataCell(Text(med.name)),
                         DataCell(Text(med.dose)),
-                        DataCell(Text(med.formId.toString())), // TODO: join con tabla Form
+                        DataCell(Text(med.formName ?? "Desconocida")), // ✅ aquí
                         DataCell(
                           IconButton(
                             icon: const Icon(Icons.image),
                             onPressed: () {
-                              if (med.photoPath != null) {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: Text(med.name),
-                                    content: Image.file(
-                                      File(med.photoPath!),
-                                      fit: BoxFit.cover,
+                              showDialog(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title:
+                                      const Text("Imagen del medicamento"),
+                                  content: med.photoPath != null
+                                      ? Image.file(
+                                          File(med.photoPath!),
+                                          height: 200,
+                                        )
+                                      : Container(
+                                          height: 200,
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                              child: Text("Sin imagen")),
+                                        ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context),
+                                      child: const Text("Cerrar"),
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text("Cerrar"),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
+                                  ],
+                                ),
+                              );
                             },
                           ),
                         ),
                         DataCell(
                           IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            icon:
+                                const Icon(Icons.edit, color: Colors.blue),
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => EditarMedicamentoScreen(
-                                    medicamento: med, // ✅ aquí mandamos el objeto
+                                    medicamento: med,
                                   ),
                                 ),
-                              ).then((_) => _loadMedicamentos()); // refrescar al volver
+                              ).then((_) => _loadMedications());
                             },
                           ),
                         ),
@@ -183,11 +180,13 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const RegistrarMedicamentoScreen()),
-          ).then((_) => _loadMedicamentos()); // refrescar al volver
+            MaterialPageRoute(
+                builder: (_) => const RegistrarMedicamentoScreen()),
+          );
+          _loadMedications();
         },
         child: const Icon(Icons.add),
       ),

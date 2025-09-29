@@ -9,15 +9,14 @@ class EditarMedicamentoScreen extends StatefulWidget {
   const EditarMedicamentoScreen({super.key, required this.medicamento});
 
   @override
-  State<EditarMedicamentoScreen> createState() => _EditarMedicamentoScreenState();
+  State<EditarMedicamentoScreen> createState() =>
+      _EditarMedicamentoScreenState();
 }
 
 class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
   final CrudMethods crud = CrudMethods();
 
-  String? selectedForm;
-  int? selectedFormId;
-
+  int? selectedFormId; // ✅ solo guardamos el id
   final TextEditingController _formController = TextEditingController();
   late TextEditingController _nameController;
   late TextEditingController _doseController;
@@ -45,8 +44,7 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
       );
 
       if (currentForm.id != -1) {
-        selectedForm = currentForm.name;
-        selectedFormId = currentForm.id;
+        selectedFormId = currentForm.id; // ✅ guardamos id
       }
     });
   }
@@ -58,7 +56,6 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
     final id = await crud.insertForm(newForm);
     setState(() {
       forms.add(FormModel(id: id, name: _formController.text));
-      selectedForm = _formController.text;
       selectedFormId = id;
     });
     _formController.clear();
@@ -66,7 +63,9 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
 
   // 🔹 Actualizar medicamento en BD
   Future<void> _updateMedication() async {
-    if (_nameController.text.isEmpty || _doseController.text.isEmpty || selectedFormId == null) {
+    if (_nameController.text.isEmpty ||
+        _doseController.text.isEmpty ||
+        selectedFormId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Completa todos los campos")),
       );
@@ -77,8 +76,8 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
       id: widget.medicamento.id, // importante
       name: _nameController.text,
       dose: _doseController.text,
-      formId: selectedFormId!,
-      photoPath: widget.medicamento.photoPath, // si ya tenía foto, se conserva
+      formId: selectedFormId!, // ✅ usamos id
+      photoPath: widget.medicamento.photoPath,
     );
 
     await crud.updateMedication(updatedMed);
@@ -99,21 +98,18 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text("Forma:", style: TextStyle(fontSize: 16)),
-                DropdownButton<String>(
-                  value: selectedForm,
+                DropdownButton<int?>(
+                  value: selectedFormId,
                   hint: const Text("Seleccionar forma"),
                   items: forms.map((form) {
-                    return DropdownMenuItem(
-                      value: form.name,
+                    return DropdownMenuItem<int>(
+                      value: form.id,
                       child: Text(form.name),
-                      onTap: () {
-                        selectedFormId = form.id;
-                      },
                     );
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
-                      selectedForm = value;
+                      selectedFormId = value;
                     });
                   },
                 ),
@@ -125,11 +121,13 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
                         title: const Text("Agregar nueva forma"),
                         content: TextField(
                           controller: _formController,
-                          decoration: const InputDecoration(hintText: "Nombre de la forma"),
+                          decoration: const InputDecoration(
+                              hintText: "Nombre de la forma"),
                         ),
                         actions: [
                           IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
+                            icon:
+                                const Icon(Icons.check, color: Colors.green),
                             onPressed: () async {
                               await _addForm();
                               Navigator.pop(context);
@@ -169,7 +167,7 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Foto (se conserva o se reemplazará más adelante)
+            // Foto
             GestureDetector(
               onTap: () {
                 // TODO: Implementar cámara/galería
@@ -194,12 +192,14 @@ class _EditarMedicamentoScreenState extends State<EditarMedicamentoScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.check, color: Colors.green, size: 32),
+                  icon: const Icon(Icons.check,
+                      color: Colors.green, size: 32),
                   onPressed: _updateMedication,
                 ),
                 const SizedBox(width: 40),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.red, size: 32),
+                  icon: const Icon(Icons.close,
+                      color: Colors.red, size: 32),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],

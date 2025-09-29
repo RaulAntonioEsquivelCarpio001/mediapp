@@ -44,6 +44,7 @@ class DatabaseHelper {
         dose TEXT NOT NULL,
         form_id INTEGER NOT NULL,
         photo_path TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
         FOREIGN KEY (form_id) REFERENCES forms(id)
       );
     ''');
