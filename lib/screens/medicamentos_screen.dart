@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../db/crud_methods.dart';
 import '../models/medication.dart';
 import 'registrar_medicamento_screen.dart';
@@ -15,6 +16,7 @@ class MedicamentosScreen extends StatefulWidget {
 class _MedicamentosScreenState extends State<MedicamentosScreen> {
   final CrudMethods crud = CrudMethods();
   List<Medication> medicamentos = [];
+  List<Medication> medicamentosFiltrados = [];
 
   @override
   void initState() {
@@ -26,6 +28,15 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
     final list = await crud.getMedicationsWithFormName();
     setState(() {
       medicamentos = list;
+      medicamentosFiltrados = list;
+    });
+  }
+
+  void _filtrarMedicamentos(String query) {
+    setState(() {
+      medicamentosFiltrados = medicamentos
+          .where((m) => m.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -90,6 +101,7 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                 const Text("Buscar: ", style: TextStyle(fontSize: 16)),
                 Expanded(
                   child: TextField(
+                    onChanged: _filtrarMedicamentos,
                     decoration: InputDecoration(
                       hintText: "Nombre del medicamento",
                       border: OutlineInputBorder(
@@ -114,14 +126,14 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                     DataColumn(label: Text("Dosis")),
                     DataColumn(label: Text("Forma")),
                     DataColumn(label: Text("Imagen")),
-                    DataColumn(label: Text("")), // para botón editar
+                    DataColumn(label: Text("Acciones")),
                   ],
-                  rows: medicamentos.map((med) {
+                  rows: medicamentosFiltrados.map((med) {
                     return DataRow(
                       cells: [
                         DataCell(Text(med.name)),
                         DataCell(Text(med.dose)),
-                        DataCell(Text(med.formName ?? "Desconocida")), // ✅ aquí
+                        DataCell(Text(med.formName ?? "Desconocida")),
                         DataCell(
                           IconButton(
                             icon: const Icon(Icons.image),
@@ -129,13 +141,22 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                               showDialog(
                                 context: context,
                                 builder: (_) => AlertDialog(
-                                  title:
-                                      const Text("Imagen del medicamento"),
-                                  content: med.photoPath != null
-                                      ? Image.file(
-                                          File(med.photoPath!),
-                                          height: 200,
-                                        )
+                                  title: Text(med.name),
+                                  content: med.photoPath != null &&
+                                          med.photoPath!.isNotEmpty
+                                      ? (kIsWeb
+                                          ? Container(
+                                              height: 200,
+                                              color: Colors.grey[200],
+                                              child: const Center(
+                                                  child: Text(
+                                                      "Imagen local no disponible en web")),
+                                            )
+                                          : Image.file(
+                                              File(med.photoPath!),
+                                              height: 200,
+                                              fit: BoxFit.contain,
+                                            ))
                                       : Container(
                                           height: 200,
                                           color: Colors.grey[200],
@@ -155,19 +176,79 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                           ),
                         ),
                         DataCell(
-                          IconButton(
-                            icon:
-                                const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EditarMedicamentoScreen(
-                                    medicamento: med,
-                                  ),
-                                ),
-                              ).then((_) => _loadMedications());
-                            },
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          EditarMedicamentoScreen(
+                                              medicamento: med),
+                                    ),
+                                  ).then((_) => _loadMedications());
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.red),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title:
+                                          const Text("Confirmar eliminación"),
+                                      content: Text(
+                                        "¿Seguro que deseas eliminar '${med.name}'?\n\n"
+                                        "👉 Si el medicamento está en un tratamiento activo, solo se desactivará.",
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
+                                          child: const Text("Cancelar"),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            // primero cerrar el diálogo
+                                            Navigator.of(context).pop();
+
+                                            try {
+                                              final result =
+                                                  await crud.deleteMedicationSafe(
+                                                      med.id!);
+
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                    content: Text(
+                                                        "✅ Medicamento eliminado correctamente")),
+                                              );
+
+                                              _loadMedications();
+                                            } catch (e) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(
+                                                        "Error al eliminar: $e")),
+                                              );
+                                            }
+                                          },
+                                          child: const Text("Eliminar",
+                                              style: TextStyle(
+                                                  color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ],

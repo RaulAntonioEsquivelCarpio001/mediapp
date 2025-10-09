@@ -1,3 +1,4 @@
+import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 import '../models/form.dart';
 import '../models/medication.dart';
@@ -41,15 +42,26 @@ class CrudMethods {
     return await db.insert("medications", med.toMap());
   }
 
-  // ✅ Versión con JOIN para obtener nombre de la forma
+  Future<List<Medication>> getMedications() async {
+    final db = await _dbHelper.db;
+    final maps = await db.query(
+      "medications",
+      where: "is_active = ?",
+      whereArgs: [1],
+    );
+    return List.generate(maps.length, (i) => Medication.fromMap(maps[i]));
+  }
+
+  // Devuelve Medication con formName (JOIN)
   Future<List<Medication>> getMedicationsWithFormName() async {
     final db = await _dbHelper.db;
     final result = await db.rawQuery('''
-      SELECT m.id, m.name, m.dose, m.form_id, m.photo_path, m.is_active, 
+      SELECT m.id, m.name, m.dose, m.form_id, m.photo_path, m.is_active,
              f.name as form_name
       FROM medications m
       LEFT JOIN forms f ON m.form_id = f.id
       WHERE m.is_active = 1
+      ORDER BY m.name COLLATE NOCASE
     ''');
     return result.map((e) => Medication.fromMap(e)).toList();
   }
@@ -69,6 +81,37 @@ class CrudMethods {
     return await db.delete("medications", where: "id = ?", whereArgs: [id]);
   }
 
+  Future<String> deleteMedicationSafe(int id) async {
+  final db = await _dbHelper.db;
+  try {
+    // Verificar si el medicamento está en tratamientos activos
+    final res = await db.rawQuery(
+      'SELECT COUNT(*) as c FROM treatments WHERE medication_id = ? AND status = ?',
+      [id, 'ACTIVE'],
+    );
+
+    final count = Sqflite.firstIntValue(res) ?? 0;
+
+    if (count > 0) {
+      // Hay vínculo con tratamientos activos → desactivar
+      await db.update(
+        'medications',
+        {'is_active': 0},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      return 'deactivated';
+    } else {
+      // No hay vínculo → eliminar físicamente
+      await db.delete('medications', where: 'id = ?', whereArgs: [id]);
+      return 'deleted';
+    }
+  } catch (e) {
+    throw Exception('deleteMedicationSafe error: $e');
+  }
+}
+
+
   // ---------------- TREATMENTS ----------------
   Future<int> insertTreatment(Treatment t) async {
     final db = await _dbHelper.db;
@@ -83,8 +126,8 @@ class CrudMethods {
 
   Future<List<Treatment>> getActiveTreatments() async {
     final db = await _dbHelper.db;
-    final result = await db.query("treatments",
-        where: "status = ?", whereArgs: ["ACTIVE"]);
+    final result =
+        await db.query("treatments", where: "status = ?", whereArgs: ["ACTIVE"]);
     return result.map((e) => Treatment.fromMap(e)).toList();
   }
 
@@ -116,8 +159,8 @@ class CrudMethods {
 
   Future<List<Schedule>> getSchedulesByTreatment(int treatmentId) async {
     final db = await _dbHelper.db;
-    final result = await db.query("schedule",
-        where: "treatment_id = ?", whereArgs: [treatmentId]);
+    final result =
+        await db.query("schedule", where: "treatment_id = ?", whereArgs: [treatmentId]);
     return result.map((e) => Schedule.fromMap(e)).toList();
   }
 
@@ -144,8 +187,8 @@ class CrudMethods {
 
   Future<List<DoseLog>> getDoseLogsBySchedule(int scheduleId) async {
     final db = await _dbHelper.db;
-    final result = await db
-        .query("dose_log", where: "schedule_id = ?", whereArgs: [scheduleId]);
+    final result =
+        await db.query("dose_log", where: "schedule_id = ?", whereArgs: [scheduleId]);
     return result.map((e) => DoseLog.fromMap(e)).toList();
   }
 
