@@ -151,6 +151,21 @@ class CrudMethods {
     );
   }
 
+    // 🔹 Obtener tratamientos con nombre del medicamento
+  Future<List<Map<String, dynamic>>> getTreatmentsWithMedicationName() async {
+    final db = await _dbHelper.db;
+    final result = await db.rawQuery('''
+      SELECT t.id, t.medication_id, t.frequency_hours, t.scheduled_time,
+             t.start_date, t.duration_days, t.notes, t.status,
+             m.name AS medication_name
+      FROM treatments t
+      LEFT JOIN medications m ON t.medication_id = m.id
+      ORDER BY t.start_date DESC;
+    ''');
+    return result;
+  }
+
+
   // ---------------- SCHEDULE ----------------
   Future<int> insertSchedule(Schedule s) async {
     final db = await _dbHelper.db;
