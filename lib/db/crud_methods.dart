@@ -5,6 +5,7 @@ import '../models/medication.dart';
 import '../models/treatment.dart';
 import '../models/schedule.dart';
 import '../models/dose_log.dart';
+import '../models/mmas8_result.dart'; // 👈 agregar al inicio con los demás imports
 
 class CrudMethods {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -221,4 +222,26 @@ class CrudMethods {
     final db = await _dbHelper.db;
     return await db.delete("dose_log", where: "id = ?", whereArgs: [id]);
   }
+
+  // ---------------- MMAS8 RESULTS ----------------
+Future<int> insertMMAS8Result(MMAS8Result result) async {
+  final db = await _dbHelper.db;
+  return await db.insert("mmas8_results", result.toMap());
 }
+
+Future<List<MMAS8Result>> getMMAS8Results() async {
+  final db = await _dbHelper.db;
+  final result = await db.query(
+    "mmas8_results",
+    orderBy: "date_taken DESC",
+  );
+  return result.map((e) => MMAS8Result.fromMap(e)).toList();
+}
+
+Future<int> deleteMMAS8Result(int id) async {
+  final db = await _dbHelper.db;
+  return await db.delete("mmas8_results", where: "id = ?", whereArgs: [id]);
+}
+}
+
+

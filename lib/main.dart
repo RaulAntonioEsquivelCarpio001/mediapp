@@ -6,6 +6,8 @@ import 'screens/editar_medicamento_screen.dart';
 import 'screens/tratamientos/tratamientos_screen.dart';
 import 'screens/tratamientos/registrar_tratamiento_screen.dart';
 import 'screens/tratamientos/editar_tratamiento_screen.dart';
+import 'screens/mmas8_screen.dart';
+
 
 void main() {
   runApp(const MediApp());
@@ -27,6 +29,8 @@ class MediApp extends StatelessWidget {
         "/registrarMedicamento": (context) => const RegistrarMedicamentoScreen(),
         "/tratamientos": (context) => const TratamientosScreen(),
         "/registrarTratamiento": (context) => const RegistrarTratamientoScreen(),
+        "/mmas8": (context) => const MMAS8Screen(),
+
       },
       // Rutas dinámicas (para editar registros)
       onGenerateRoute: (settings) {

@@ -36,6 +36,12 @@ class HomeScreen extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, "/tratamientos");
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.fact_check),
+              title: const Text("Cuestionario MMAS-8"),
+              onTap: () {
+                Navigator.pushReplacementNamed(context, "/mmas8");},
+                ),
           ],
         ),
       ),

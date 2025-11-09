@@ -87,6 +87,34 @@ class DatabaseHelper {
       );
     ''');
 
+    // Tabla mmas8_results
+    await db.execute('''
+  CREATE TABLE mmas8_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    score REAL NOT NULL,
+    adherence_level TEXT NOT NULL,
+    date_taken INTEGER NOT NULL,
+    notes TEXT
+  );
+''');
+
+// Trigger para calcular automáticamente el nivel
+await db.execute('''
+  CREATE TRIGGER trg_mmas8_level
+  AFTER INSERT ON mmas8_results
+  FOR EACH ROW
+  BEGIN
+    UPDATE mmas8_results
+    SET adherence_level = CASE
+      WHEN NEW.score = 0 THEN 'HIGH'
+      WHEN NEW.score < 2 THEN 'MEDIUM'
+      ELSE 'LOW'
+    END
+    WHERE id = NEW.id;
+  END;
+''');
+
+
     // Insertar formas básicas
     await db.insert("forms", {"name": "Pastilla"});
     await db.insert("forms", {"name": "Crema"});
