@@ -56,7 +56,7 @@ class _RegistrarTratamientoScreenState
     if (date != null) setState(() => _selectedDate = date);
   }
 
-  Future<void> _saveTreatment() async {
+    Future<void> _saveTreatment() async {
     if (selectedMedication == null ||
         _frequencyController.text.isEmpty ||
         _durationController.text.isEmpty ||
@@ -78,9 +78,28 @@ class _RegistrarTratamientoScreenState
       status: "ACTIVE",
     );
 
-    await crud.insertTreatment(treatment);
+    // 1) Insertar treatment y obtener id
+    final int newId = await crud.insertTreatment(treatment);
+
+    // 2) Generar schedule completo para ese treatment
+    try {
+      await crud.generateScheduleForTreatment(
+        treatmentId: newId,
+        startDateEpoch: treatment.startDate,
+        scheduledTime: treatment.scheduledTime ?? "08:00",
+        frequencyHours: treatment.frequencyHours ?? 24,
+        durationDays: treatment.durationDays,
+      );
+    } catch (e) {
+      // Si falla la generación, informar pero no bloquear (puedes decidir eliminar el treatment si quieres)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Tratamiento creado, pero error generando schedule: $e")),
+      );
+    }
+
     Navigator.pop(context);
   }
+
 
   @override
   Widget build(BuildContext context) {

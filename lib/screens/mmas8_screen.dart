@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../db/crud_methods.dart';
 import '../../models/mmas8_result.dart';
+import '../../widgets/app_drawer.dart'; // <-- IMPORTANTE
 
 class MMAS8Screen extends StatefulWidget {
   const MMAS8Screen({super.key});
@@ -12,7 +13,6 @@ class MMAS8Screen extends StatefulWidget {
 class _MMAS8ScreenState extends State<MMAS8Screen> {
   final CrudMethods _crud = CrudMethods();
 
-  // Respuestas
   Map<int, dynamic> answers = {};
   double? _likertValue;
 
@@ -43,6 +43,7 @@ class _MMAS8ScreenState extends State<MMAS8Screen> {
       dateTaken: DateTime.now().millisecondsSinceEpoch,
       notes: null,
     );
+
     await _crud.insertMMAS8Result(result);
 
     showDialog(
@@ -66,26 +67,10 @@ class _MMAS8ScreenState extends State<MMAS8Screen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Cuestionario MMAS-8")),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text("MediApp", style: TextStyle(color: Colors.white)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Inicio"),
-              onTap: () => Navigator.pushNamed(context, "/"),
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment),
-              title: const Text("MMAS-8"),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
+
+      // ⭐⭐⭐ Drawer unificado ⭐⭐⭐
+      drawer: const AppDrawer(),
+
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

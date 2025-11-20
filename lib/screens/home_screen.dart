@@ -1,95 +1,90 @@
 import 'package:flutter/material.dart';
+import '../db/crud_methods.dart';
+import 'package:intl/intl.dart';
+import '../widgets/app_drawer.dart';   // <-- IMPORTANTE
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final CrudMethods crud = CrudMethods();
+  List<Map<String, dynamic>> dosesToday = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayDoses();
+  }
+
+  Future<void> _loadTodayDoses() async {
+    final list = await crud.getScheduleForToday();
+    setState(() {
+      dosesToday = list;
+    });
+  }
+
+  String _formatTimeFromEpoch(int epoch) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(epoch);
+    return DateFormat("hh:mm a").format(dt);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("MediApp")),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text("Menú", style: TextStyle(color: Colors.white, fontSize: 24)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Inicio"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/");
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.medication),
-              title: const Text("Medicamentos"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/medicamentos");
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment),
-              title: const Text("Tratamientos"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/tratamientos");
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.fact_check),
-              title: const Text("Cuestionario MMAS-8"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/mmas8");},
-                ),
-          ],
-        ),
-      ),
+
+      // ⭐ USAR EL MISMO DRAWER PARA TODA LA APP ⭐
+      drawer: const AppDrawer(),
+
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    height: 150,
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text("📅 Horario del día\n(Aquí irán las próximas tomas)",
-                          textAlign: TextAlign.center),
-                    ),
+            // HORARIO DEL DÍA
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "📅 Horario del día",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    height: 150,
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.lightBlue[50],
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text("💡 Tip diario\n(Aquí irá un consejo motivacional/educativo)",
-                          textAlign: TextAlign.center),
-                    ),
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  if (dosesToday.isEmpty)
+                    const Text(
+                      "No hay tomas programadas para hoy.",
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  else
+                    ...dosesToday.map((d) {
+                      final formatted = _formatTimeFromEpoch(
+                        d["scheduled_timestamp"] as int,
+                      );
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.alarm),
+                          title: Text("$formatted – ${d["med_name"]}"),
+                          subtitle: Text(d["med_dose"] ?? ""),
+                        ),
+                      );
+                    }),
+                ],
+              ),
             ),
+
             const SizedBox(height: 12),
+
+            // DASHBOARD DE ADHERENCIA (placeholder)
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -98,12 +93,17 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 5),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 5,
+                    )
                   ],
                 ),
                 child: const Center(
-                  child: Text("📊 Dashboard de Adherencia\n(Gráficas y estadísticas irán aquí)",
-                      textAlign: TextAlign.center),
+                  child: Text(
+                    "📊 Dashboard de Adherencia\n(Próximamente)",
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),

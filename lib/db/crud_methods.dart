@@ -195,6 +195,126 @@ class CrudMethods {
     return await db.delete("schedule", where: "id = ?", whereArgs: [id]);
   }
 
+  // ---------------- SCHEDULE HELPERS ----------------
+
+/// Borra todos los schedule asociados a un tratamiento.
+Future<int> deleteSchedulesByTreatment(int treatmentId) async {
+  final db = await _dbHelper.db;
+  return await db.delete(
+    "schedule",
+    where: "treatment_id = ?",
+    whereArgs: [treatmentId],
+  );
+}
+
+/// Genera y guarda en BD el schedule completo para un tratamiento.
+///
+/// - [treatmentId] : id del treatment en la tabla treatments
+/// - [startDateEpoch] : epoch milliseconds de la fecha de inicio
+/// - [scheduledTime] : texto horario (ej. "08:00 AM" o "08:00")
+/// - [frequencyHours] : cada cuántas horas se repite
+/// - [durationDays] : duración en días
+Future<void> generateScheduleForTreatment({
+  required int treatmentId,
+  required int startDateEpoch,
+  required String scheduledTime,
+  required int frequencyHours,
+  required int durationDays,
+}) async {
+  final db = await _dbHelper.db;
+
+  // Parsear scheduledTime a hora y minuto (admite "hh:mm a" o "HH:mm")
+  final time = _parseTimeString(scheduledTime);
+  if (time == null) {
+    throw Exception("generateScheduleForTreatment: formato de hora inválido: $scheduledTime");
+  }
+
+  final startDate = DateTime.fromMillisecondsSinceEpoch(startDateEpoch);
+  // Primera dosis: startDate con la hora/minuto indicados
+  DateTime firstDose = DateTime(
+    startDate.year,
+    startDate.month,
+    startDate.day,
+    time["hour"]!,
+    time["minute"]!,
+  );
+
+  // Asegurarse que la primera dosis se ubique en o después de la fecha de inicio:
+  // si la hora resultante es antes del inicio (por diferencia de timezone u otro),
+  // mantener misma fecha (asumimos startDate es la fecha de inicio y scheduledTime la hora del día).
+  // total de dosis = ceil( (durationDays * 24) / frequencyHours )
+  final totalDoses = ((durationDays * 24) / frequencyHours).ceil();
+
+  // Preparar lista de inserciones
+  final batch = db.batch();
+
+  for (int i = 0; i < totalDoses; i++) {
+    final dt = firstDose.add(Duration(hours: i * frequencyHours));
+    final epoch = dt.millisecondsSinceEpoch;
+
+    // Insertar schedule
+    batch.insert("schedule", {
+      "treatment_id": treatmentId,
+      "scheduled_timestamp": epoch,
+      "status": "PENDING",
+    });
+  }
+
+  await batch.commit(noResult: true);
+}
+
+/// Devuelve la lista de tomas del día (schedule entre inicio y fin del día),
+/// con info del medicamento y del treatment.
+Future<List<Map<String, dynamic>>> getScheduleForToday() async {
+  final db = await _dbHelper.db;
+
+  final now = DateTime.now();
+  final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+  final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59).millisecondsSinceEpoch;
+
+  final result = await db.rawQuery('''
+    SELECT s.id as schedule_id,
+           s.scheduled_timestamp,
+           s.status,
+           t.id as treatment_id,
+           t.medication_id,
+           m.name as med_name,
+           m.dose as med_dose
+    FROM schedule s
+    JOIN treatments t ON t.id = s.treatment_id
+    JOIN medications m ON m.id = t.medication_id
+    WHERE s.scheduled_timestamp BETWEEN ? AND ?
+    ORDER BY s.scheduled_timestamp ASC
+  ''', [startOfDay, endOfDay]);
+
+  return result;
+}
+
+/// Helper interno: parsea "08:00 AM" o "08:00" o "20:30" y devuelve { "hour": h, "minute": m }
+Map<String, int>? _parseTimeString(String timeStr) {
+  try {
+    final s = timeStr.trim();
+    // Detectar AM/PM
+    final hasAmPm = s.toUpperCase().contains("AM") || s.toUpperCase().contains("PM");
+    if (hasAmPm) {
+      final cleaned = s.toUpperCase().replaceAll("AM", "").replaceAll("PM", "").trim();
+      final parts = cleaned.split(":");
+      int hour = int.tryParse(parts[0].trim()) ?? 0;
+      int minute = parts.length > 1 ? int.tryParse(parts[1].trim()) ?? 0 : 0;
+      if (s.toUpperCase().contains("PM") && hour != 12) hour += 12;
+      if (s.toUpperCase().contains("AM") && hour == 12) hour = 0;
+      return {"hour": hour, "minute": minute};
+    } else {
+      final parts = s.split(":");
+      int hour = int.tryParse(parts[0].trim()) ?? 0;
+      int minute = parts.length > 1 ? int.tryParse(parts[1].trim()) ?? 0 : 0;
+      return {"hour": hour, "minute": minute};
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
   // ---------------- DOSE_LOG ----------------
   Future<int> insertDoseLog(DoseLog d) async {
     final db = await _dbHelper.db;

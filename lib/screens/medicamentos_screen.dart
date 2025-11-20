@@ -5,6 +5,7 @@ import '../db/crud_methods.dart';
 import '../models/medication.dart';
 import 'registrar_medicamento_screen.dart';
 import 'editar_medicamento_screen.dart';
+import '../widgets/app_drawer.dart';   // <-- IMPORTANTE
 
 class MedicamentosScreen extends StatefulWidget {
   const MedicamentosScreen({super.key});
@@ -57,39 +58,10 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
           ],
         ),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text("Menú",
-                  style: TextStyle(color: Colors.white, fontSize: 24)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Inicio"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/");
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.medication),
-              title: const Text("Medicamentos"),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment),
-              title: const Text("Tratamientos"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/tratamientos");
-              },
-            ),
-          ],
-        ),
-      ),
+
+      // ⭐⭐⭐ USAMOS EL MISMO DRAWER PARA TODA LA APP ⭐⭐⭐
+      drawer: const AppDrawer(),
+
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -107,8 +79,7 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                   ),
                 ),
@@ -180,28 +151,24 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon:
-                                    const Icon(Icons.edit, color: Colors.blue),
+                                icon: const Icon(Icons.edit, color: Colors.blue),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          EditarMedicamentoScreen(
-                                              medicamento: med),
+                                          EditarMedicamentoScreen(medicamento: med),
                                     ),
                                   ).then((_) => _loadMedications());
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.red),
+                                icon: const Icon(Icons.delete, color: Colors.red),
                                 onPressed: () {
                                   showDialog(
                                     context: context,
                                     builder: (_) => AlertDialog(
-                                      title:
-                                          const Text("Confirmar eliminación"),
+                                      title: const Text("Confirmar eliminación"),
                                       content: Text(
                                         "¿Seguro que deseas eliminar '${med.name}'?\n\n"
                                         "👉 Si el medicamento está en un tratamiento activo, solo se desactivará.",
@@ -214,19 +181,18 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                                         ),
                                         TextButton(
                                           onPressed: () async {
-                                            // primero cerrar el diálogo
                                             Navigator.of(context).pop();
 
                                             try {
-                                              final result =
-                                                  await crud.deleteMedicationSafe(
-                                                      med.id!);
+                                              await crud.deleteMedicationSafe(med.id!);
 
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(
                                                 const SnackBar(
-                                                    content: Text(
-                                                        "✅ Medicamento eliminado correctamente")),
+                                                  content: Text(
+                                                    "✅ Medicamento eliminado correctamente",
+                                                  ),
+                                                ),
                                               );
 
                                               _loadMedications();
@@ -234,14 +200,15 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(
                                                 SnackBar(
-                                                    content: Text(
-                                                        "Error al eliminar: $e")),
+                                                  content: Text("Error al eliminar: $e"),
+                                                ),
                                               );
                                             }
                                           },
-                                          child: const Text("Eliminar",
-                                              style: TextStyle(
-                                                  color: Colors.red)),
+                                          child: const Text(
+                                            "Eliminar",
+                                            style: TextStyle(color: Colors.red),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -260,12 +227,14 @@ class _MedicamentosScreenState extends State<MedicamentosScreen> {
           ],
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => const RegistrarMedicamentoScreen()),
+              builder: (_) => const RegistrarMedicamentoScreen(),
+            ),
           );
           _loadMedications();
         },

@@ -85,7 +85,7 @@ class _EditarTratamientoScreenState extends State<EditarTratamientoScreen> {
     });
   }
 
-  Future<void> _updateTreatment() async {
+    Future<void> _updateTreatment() async {
     if (selectedMedication == null ||
         _frequencyController.text.isEmpty ||
         _durationController.text.isEmpty) {
@@ -106,9 +106,30 @@ class _EditarTratamientoScreenState extends State<EditarTratamientoScreen> {
       status: widget.tratamiento["status"],
     );
 
+    // 1) Actualizar tratamiento
     await crud.updateTreatment(updated);
+
+    // 2) Borrar schedule viejo y regenerar el nuevo basado en los datos actualizados
+    try {
+      if (updated.id != null) {
+        await crud.deleteSchedulesByTreatment(updated.id!);
+        await crud.generateScheduleForTreatment(
+          treatmentId: updated.id!,
+          startDateEpoch: updated.startDate,
+          scheduledTime: updated.scheduledTime ?? "08:00",
+          frequencyHours: updated.frequencyHours ?? 24,
+          durationDays: updated.durationDays,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Tratamiento actualizado, pero error regenerando schedule: $e")),
+      );
+    }
+
     Navigator.pop(context);
   }
+
 
   Future<void> _pickTime() async {
     final time = await showTimePicker(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../db/crud_methods.dart';
 import 'registrar_tratamiento_screen.dart';
+import '../../widgets/app_drawer.dart';        // <-- IMPORTANTE
 import 'editar_tratamiento_screen.dart';
 
 class TratamientosScreen extends StatefulWidget {
@@ -45,36 +46,10 @@ class _TratamientosScreenState extends State<TratamientosScreen> {
       appBar: AppBar(
         title: const Text("Tratamientos"),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text("Menú", style: TextStyle(color: Colors.white, fontSize: 24)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text("Inicio"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/");
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.medication),
-              title: const Text("Medicamentos"),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, "/medicamentos");
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.assignment),
-              title: const Text("Tratamientos"),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
+
+      // ⭐⭐ AQUÍ USAMOS EL MISMO DRAWER PARA TODA LA APP ⭐⭐
+      drawer: const AppDrawer(),
+
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -112,7 +87,7 @@ class _TratamientosScreenState extends State<TratamientosScreen> {
                     DataColumn(label: Text("Inicio")),
                     DataColumn(label: Text("Duración")),
                     DataColumn(label: Text("Estado")),
-                    DataColumn(label: Text("Acciones")), // editar + eliminar
+                    DataColumn(label: Text("Acciones")),
                   ],
                   rows: tratamientosFiltrados.map((t) {
                     return DataRow(
@@ -130,9 +105,7 @@ class _TratamientosScreenState extends State<TratamientosScreen> {
                         DataCell(Text(t["status"] ?? "ACTIVE")),
                         DataCell(
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              // Botón editar
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.blue),
                                 tooltip: "Editar tratamiento",
@@ -147,13 +120,10 @@ class _TratamientosScreenState extends State<TratamientosScreen> {
                                   _loadTreatments();
                                 },
                               ),
-
-                              // Botón eliminar (función pendiente)
                               IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
                                 tooltip: "Eliminar tratamiento",
                                 onPressed: () {
-                                  // ⚠️ Implementar la lógica real después
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text("Función de eliminación pendiente."),
@@ -173,6 +143,7 @@ class _TratamientosScreenState extends State<TratamientosScreen> {
           ],
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
