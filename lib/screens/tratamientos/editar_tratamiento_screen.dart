@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../db/crud_methods.dart';
 import '../../models/treatment.dart';
 import '../../models/medication.dart';
+import '../../services/schedule_notification_manager.dart';
+
 
 class EditarTratamientoScreen extends StatefulWidget {
   final Map<String, dynamic> tratamiento;
@@ -85,7 +87,7 @@ class _EditarTratamientoScreenState extends State<EditarTratamientoScreen> {
     });
   }
 
-    Future<void> _updateTreatment() async {
+      Future<void> _updateTreatment() async {
     if (selectedMedication == null ||
         _frequencyController.text.isEmpty ||
         _durationController.text.isEmpty) {
@@ -106,13 +108,19 @@ class _EditarTratamientoScreenState extends State<EditarTratamientoScreen> {
       status: widget.tratamiento["status"],
     );
 
-    // 1) Actualizar tratamiento
+    // 1) Actualizar tratamiento en BD
     await crud.updateTreatment(updated);
 
-    // 2) Borrar schedule viejo y regenerar el nuevo basado en los datos actualizados
+    // 2) Borrar schedule viejo y regenerar el nuevo; reprogramar notifs
     try {
       if (updated.id != null) {
+        final manager = ScheduleNotificationManager();
+
+        // cancelar notifs previas y borrar schedule
+        await manager.cancelNotificationsForTreatment(updated.id!);
         await crud.deleteSchedulesByTreatment(updated.id!);
+
+        // generar nuevo schedule
         await crud.generateScheduleForTreatment(
           treatmentId: updated.id!,
           startDateEpoch: updated.startDate,
@@ -120,16 +128,18 @@ class _EditarTratamientoScreenState extends State<EditarTratamientoScreen> {
           frequencyHours: updated.frequencyHours ?? 24,
           durationDays: updated.durationDays,
         );
+
+        // reprogramar notificaciones
+        await manager.scheduleNotificationsForTreatment(updated.id!);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Tratamiento actualizado, pero error regenerando schedule: $e")),
+        SnackBar(content: Text("Tratamiento actualizado, pero error regenerando schedule/notifs: $e")),
       );
     }
 
     Navigator.pop(context);
   }
-
 
   Future<void> _pickTime() async {
     final time = await showTimePicker(

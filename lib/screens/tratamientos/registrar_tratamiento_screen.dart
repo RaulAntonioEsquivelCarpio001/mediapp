@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../db/crud_methods.dart';
 import '../../models/treatment.dart';
+import '../../services/schedule_notification_manager.dart';
 import '../../models/medication.dart';
 
 class RegistrarTratamientoScreen extends StatefulWidget {
@@ -91,15 +92,23 @@ class _RegistrarTratamientoScreenState
         durationDays: treatment.durationDays,
       );
     } catch (e) {
-      // Si falla la generación, informar pero no bloquear (puedes decidir eliminar el treatment si quieres)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Tratamiento creado, pero error generando schedule: $e")),
       );
     }
 
+    // 3) Programar notificaciones para el treatment insertado
+    try {
+      final manager = ScheduleNotificationManager();
+      await manager.scheduleNotificationsForTreatment(newId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Tratamiento creado, pero error programando notificaciones: $e")),
+      );
+    }
+
     Navigator.pop(context);
   }
-
 
   @override
   Widget build(BuildContext context) {
