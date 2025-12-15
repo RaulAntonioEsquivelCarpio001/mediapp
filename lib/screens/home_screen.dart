@@ -44,7 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
+            // =======================
             // HORARIO DEL DÍA
+            // =======================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -57,34 +59,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text(
                     "📅 Horario del día",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 10),
+
                   if (dosesToday.isEmpty)
                     const Text(
                       "No hay tomas programadas para hoy.",
                       style: TextStyle(color: Colors.grey),
                     )
                   else
-                    ...dosesToday.map((d) {
-                      final formatted = _formatTimeFromEpoch(
-                        d["scheduled_timestamp"] as int,
-                      );
-                      return Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.alarm),
-                          title: Text("$formatted – ${d["med_name"]}"),
-                          subtitle: Text(d["med_dose"] ?? ""),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: 250, // ⬅ límite visual del área (ajústalo si quieres)
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: dosesToday.map((d) {
+                            final formatted = _formatTimeFromEpoch(
+                              d["scheduled_timestamp"] as int,
+                            );
+
+                            return Card(
+                              child: ListTile(
+                                leading: const Icon(Icons.alarm),
+                                title: Text(
+                                  "$formatted – ${d["med_name"]}",
+                                ),
+                                subtitle: Text(d["med_dose"] ?? ""),
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }),
+                      ),
+                    ),
                 ],
               ),
             ),
 
             const SizedBox(height: 12),
 
-            // DASHBOARD DE ADHERENCIA (placeholder)
+            // =======================
+            // DASHBOARD DE ADHERENCIA
+            // =======================
             Expanded(
               child: Container(
                 width: double.infinity,
