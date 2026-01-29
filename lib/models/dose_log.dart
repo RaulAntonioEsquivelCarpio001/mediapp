@@ -1,3 +1,4 @@
+// lib/models/dose_log.dart
 class DoseLog {
   final int? id;
   final int scheduleId;

@@ -1,3 +1,4 @@
+// lib/models/schedule.dart
 class Schedule {
   final int? id;
   final int treatmentId;

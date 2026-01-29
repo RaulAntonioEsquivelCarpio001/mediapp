@@ -20,42 +20,46 @@ void main() async {
   // Inicializar sistema de notificaciones
   final notifService = NotificationService();
   await notifService.init(onAction: (payloadStr, actionId) async {
-    try {
-      Map<String, dynamic> payload = {};
-      if (payloadStr.isNotEmpty) {
-        try {
-          payload = jsonDecode(payloadStr) as Map<String, dynamic>;
-        } catch (_) {
-          // payload no es JSON válido; salir
-          print("Payload no es JSON: $payloadStr");
-          return;
-        }
-      }
-
-      final scheduleId = payload["schedule_id"] is int
-          ? payload["schedule_id"] as int
-          : int.tryParse(payload["schedule_id"]?.toString() ?? "");
-
-      if (scheduleId == null) {
-        print("schedule_id nulo o inválido en onAction");
-        return;
-      }
-
-      final crud = CrudMethods();
-      final aid = (actionId ?? 'tap').toString().toUpperCase();
-
-      if (aid == 'TAKE') {
-        await crud.registerDoseTaken(scheduleId: scheduleId);
-      } else if (aid == 'SKIP') {
-        await crud.registerDoseMissed(scheduleId: scheduleId);
-      } else {
-        // 'tap' u otras acciones pueden manejarse aquí si quieres abrir pantalla
-        print("Acción notificación: $aid (sin manejador adicional)");
-      }
-    } catch (e, st) {
-      print("Error en onAction: $e\n$st");
+  try {
+    Map<String, dynamic> payload = {};
+    if (payloadStr.isNotEmpty) {
+      payload = jsonDecode(payloadStr) as Map<String, dynamic>;
     }
-  });
+
+    final scheduleId = payload["schedule_id"] is int
+        ? payload["schedule_id"] as int
+        : int.tryParse(payload["schedule_id"]?.toString() ?? "");
+
+    if (scheduleId == null) {
+      print("❌ schedule_id inválido");
+      return;
+    }
+
+    final crud = CrudMethods();
+    final aid = actionId.toUpperCase();
+    final notifService = NotificationService();
+
+    if (aid == 'TAKE') {
+      print("💊 Medicamento tomado");
+      await crud.registerDoseTaken(scheduleId: scheduleId);
+      await notifService.cancelNotification(scheduleId);
+
+    } else if (aid == 'SKIP') {
+      print("❌ Medicamento omitido");
+      await crud.registerDoseMissed(scheduleId: scheduleId);
+      await notifService.cancelNotification(scheduleId);
+
+    } else if (aid == 'EVIDENCE') {
+      print("📸 Evidencia solicitada (pendiente implementación)");
+
+    } else {
+      print("👆 Tap normal en notificación");
+    }
+  } catch (e, st) {
+    print("🔥 Error en onAction: $e\n$st");
+  }
+});
+
 
   // 🔥 Permiso obligatorio para Android 13+
   final plugin = FlutterLocalNotificationsPlugin();

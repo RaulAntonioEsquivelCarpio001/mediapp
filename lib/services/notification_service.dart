@@ -1,4 +1,3 @@
-// lib/services/notification_service.dart
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -22,7 +21,6 @@ class NotificationService {
   Future<void> init({NotificationCallback? onAction}) async {
     onNotificationAction = onAction;
 
-    // Inicializar zonas horarias (necesario para zonedSchedule)
     tzdata.initializeTimeZones();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -42,7 +40,6 @@ class NotificationService {
       },
     );
 
-    // Crear canal Android de máxima importancia (necesario para heads-up)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'mediapp_channel',
       'Recordatorios',
@@ -58,8 +55,7 @@ class NotificationService {
         ?.createNotificationChannel(channel);
   }
 
-  /// Programa una notificación (heads-up, prioridad alta).
-  /// Nota: el nombre del método coincide con el usado por ScheduleNotificationManager
+  /// 🔥 NOTIFICACIÓN PERSISTENTE TIPO APPLE HEALTH
   Future<void> scheduleFullscreenPersistentNotification({
     required int id,
     required DateTime scheduledDate,
@@ -78,9 +74,29 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
       ticker: 'Recordatorio',
-      // fullScreenIntent intentionally left false — we want heads-up notifications.
       fullScreenIntent: false,
-      autoCancel: true,
+
+      // 🔥 NO SE CIERRA HASTA ACCIÓN
+      autoCancel: false,
+      ongoing: true,
+
+      actions: <AndroidNotificationAction>[
+        const AndroidNotificationAction(
+          'TAKE',
+          'Tomar',
+          showsUserInterface: true,
+        ),
+        const AndroidNotificationAction(
+          'SKIP',
+          'Cancelar',
+          showsUserInterface: true,
+        ),
+        const AndroidNotificationAction(
+          'EVIDENCE',
+          'Evidencia',
+          showsUserInterface: true,
+        ),
+      ],
     );
 
     final iosDetails = DarwinNotificationDetails(
@@ -98,8 +114,6 @@ class NotificationService {
       NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: payloadStr,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      // NOTA: no incluimos uiLocalNotificationDateInterpretation porque
-      // esa opción no existe en la versión que usas.
     );
   }
 
