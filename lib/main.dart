@@ -13,6 +13,7 @@ import 'services/notification_service.dart';
 import 'db/crud_methods.dart';
 import 'services/schedule_notification_manager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'screens/debug/dose_logs_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +93,7 @@ class MediApp extends StatelessWidget {
         "/tratamientos": (context) => const TratamientosScreen(),
         "/registrarTratamiento": (context) => const RegistrarTratamientoScreen(),
         "/mmas8": (context) => const MMAS8Screen(),
+        "/debugLogs": (context) => const DoseLogsScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == "/editarMedicamento") {

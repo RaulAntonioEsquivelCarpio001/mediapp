@@ -376,6 +376,27 @@ class CrudMethods {
       whereArgs: [scheduleId],
     );
   }
+  /// 🔍 DEBUG: obtener TODOS los registros de dosis
+Future<List<Map<String, dynamic>>> getAllDoseLogsWithInfo() async {
+  final db = await _dbHelper.db;
+
+  final result = await db.rawQuery('''
+    SELECT d.id,
+           d.schedule_id,
+           d.actual_timestamp,
+           d.status,
+           d.photo_path,
+           s.scheduled_timestamp,
+           m.name as med_name
+    FROM dose_log d
+    LEFT JOIN schedule s ON s.id = d.schedule_id
+    LEFT JOIN treatments t ON t.id = s.treatment_id
+    LEFT JOIN medications m ON m.id = t.medication_id
+    ORDER BY d.actual_timestamp DESC
+  ''');
+
+  return result;
+}
 
   // ---------------- MMAS8 RESULTS ----------------
   Future<int> insertMMAS8Result(MMAS8Result result) async {

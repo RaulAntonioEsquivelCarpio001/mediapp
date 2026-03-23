@@ -16,6 +16,10 @@ class AppDrawer extends StatelessWidget {
               style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
+
+          // ======================
+          // PRINCIPAL
+          // ======================
           ListTile(
             leading: const Icon(Icons.home),
             title: const Text("Inicio"),
@@ -39,11 +43,25 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.fact_check),
-            title:
-            
-             const Text("Cuestionario MMAS-8"),
+            title: const Text("Cuestionario MMAS-8"),
             onTap: () {
               Navigator.pushReplacementNamed(context, "/mmas8");
+            },
+          ),
+
+          const Divider(),
+
+          // ======================
+          // 🧪 DEBUG (TEMPORAL)
+          // ======================
+          ListTile(
+            leading: const Icon(Icons.bug_report, color: Colors.red),
+            title: const Text(
+              "Debug: Dose Logs",
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () {
+              Navigator.pushNamed(context, "/debugLogs");
             },
           ),
         ],
