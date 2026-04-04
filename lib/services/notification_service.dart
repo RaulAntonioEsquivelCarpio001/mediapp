@@ -3,10 +3,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 
-typedef NotificationCallback = Future<void> Function(
-  String payload,
-  String actionId,
-);
+typedef NotificationCallback =
+    Future<void> Function(String payload, String actionId);
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -26,8 +24,10 @@ class NotificationService {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
 
-    const initSettings =
-        InitializationSettings(android: androidInit, iOS: iosInit);
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
 
     await _plugin.initialize(
       initSettings,
@@ -51,7 +51,8 @@ class NotificationService {
 
     await _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
   }
 
@@ -82,18 +83,13 @@ class NotificationService {
 
       actions: <AndroidNotificationAction>[
         const AndroidNotificationAction(
-          'TAKE',
-          'Tomar',
+          'EVIDENCE',
+          'Tomar dosis',
           showsUserInterface: true,
         ),
         const AndroidNotificationAction(
           'SKIP',
-          'Cancelar',
-          showsUserInterface: true,
-        ),
-        const AndroidNotificationAction(
-          'EVIDENCE',
-          'Evidencia',
+          'Omitir',
           showsUserInterface: true,
         ),
       ],

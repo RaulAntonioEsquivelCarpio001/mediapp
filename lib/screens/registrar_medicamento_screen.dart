@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../db/crud_methods.dart';
 import '../models/form.dart';
 import '../models/medication.dart';
@@ -15,7 +17,7 @@ class _RegistrarMedicamentoScreenState
     extends State<RegistrarMedicamentoScreen> {
   final CrudMethods crud = CrudMethods();
 
-  int? selectedFormId; // ✅ guardamos solo el id de la forma
+  int? selectedFormId;
 
   final TextEditingController _formController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -23,13 +25,15 @@ class _RegistrarMedicamentoScreenState
 
   List<FormModel> forms = [];
 
+  File? _photo;
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
     _loadForms();
   }
 
-  // 🔹 Cargar formas desde la BD
   Future<void> _loadForms() async {
     final list = await crud.getForms();
     setState(() {
@@ -37,19 +41,26 @@ class _RegistrarMedicamentoScreenState
     });
   }
 
-  // 🔹 Insertar una nueva forma en BD
   Future<void> _addForm() async {
     if (_formController.text.isEmpty) return;
     final newForm = FormModel(name: _formController.text);
     final id = await crud.insertForm(newForm);
     setState(() {
       forms.add(FormModel(id: id, name: _formController.text));
-      selectedFormId = id; // ✅ guardamos id
+      selectedFormId = id;
     });
     _formController.clear();
   }
 
-  // 🔹 Insertar un medicamento en BD
+  Future<void> _takePhoto() async {
+    final picked = await _picker.pickImage(source: ImageSource.camera);
+    if (picked != null) {
+      setState(() {
+        _photo = File(picked.path);
+      });
+    }
+  }
+
   Future<void> _saveMedication() async {
     if (_nameController.text.isEmpty ||
         _doseController.text.isEmpty ||
@@ -63,11 +74,12 @@ class _RegistrarMedicamentoScreenState
     final med = Medication(
       name: _nameController.text,
       dose: _doseController.text,
-      formId: selectedFormId!, // ✅ usamos id de forma
+      formId: selectedFormId!,
+      photoPath: _photo?.path,
     );
-    await crud.insertMedication(med);
 
-    Navigator.pop(context); // volver a la lista de medicamentos
+    await crud.insertMedication(med);
+    Navigator.pop(context);
   }
 
   @override
@@ -78,7 +90,6 @@ class _RegistrarMedicamentoScreenState
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // Dropdown de formas
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -106,13 +117,10 @@ class _RegistrarMedicamentoScreenState
                         title: const Text("Agregar nueva forma"),
                         content: TextField(
                           controller: _formController,
-                          decoration: const InputDecoration(
-                              hintText: "Nombre de la forma"),
                         ),
                         actions: [
                           IconButton(
-                            icon:
-                                const Icon(Icons.check, color: Colors.green),
+                            icon: const Icon(Icons.check, color: Colors.green),
                             onPressed: () async {
                               await _addForm();
                               Navigator.pop(context);
@@ -130,9 +138,9 @@ class _RegistrarMedicamentoScreenState
                 ),
               ],
             ),
+
             const SizedBox(height: 16),
 
-            // Campo Nombre
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -140,37 +148,43 @@ class _RegistrarMedicamentoScreenState
                 border: OutlineInputBorder(),
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // Campo Dosis
             TextField(
               controller: _doseController,
               decoration: const InputDecoration(
-                labelText: "Dosis (ej. 500mg)",
+                labelText: "Dosis",
                 border: OutlineInputBorder(),
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // Contenedor para foto (a implementar después)
+            // ✅ 🔥 CORREGIDO (SIN OVERFLOW)
             GestureDetector(
-              onTap: () {
-                // TODO: Implementar cámara/galería
-              },
+              onTap: _takePhoto,
               child: Container(
                 height: 150,
+                width: double.infinity, // 🔥 IMPORTANTE
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(
-                  child: Text("📷 Tomar/Seleccionar foto del medicamento"),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _photo == null
+                      ? const Center(child: Text("📷 Tomar foto"))
+                      : Image.file(
+                          _photo!,
+                          fit: BoxFit.cover, // 🔥 CLAVE
+                        ),
                 ),
               ),
             ),
+
             const SizedBox(height: 24),
 
-            // Botones aceptar/cancelar
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
